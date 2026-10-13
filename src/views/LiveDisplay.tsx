@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import QRCode from 'qrcode';
 import { useRouter } from '../router/Router';
 import { useWedding } from '../context/WeddingContext';
 import { Photo } from '../types';
-import { QrCode, Maximize2, Minimize2, ArrowLeft, Heart, Sparkles } from 'lucide-react';
+import { getEventShareableUrl } from '../services/urlUtils';
+import { Maximize2, Minimize2, ArrowLeft, Sparkles, ExternalLink } from 'lucide-react';
 
 interface LiveDisplayProps {
   eventId: string;
@@ -18,6 +20,10 @@ export const LiveDisplay: React.FC<LiveDisplayProps> = ({ eventId }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeHighlightIndex, setActiveHighlightIndex] = useState(0);
 
+  // QR Code canvas reference and URL
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const targetUrl = event ? getEventShareableUrl(event, true) : '';
+
   // Auto rotate highlight photo every 6 seconds
   useEffect(() => {
     if (photos.length === 0) return;
@@ -26,6 +32,28 @@ export const LiveDisplay: React.FC<LiveDisplayProps> = ({ eventId }) => {
     }, 6000);
     return () => clearInterval(interval);
   }, [photos.length]);
+
+  // Generate real scan-able QR Code on the canvas
+  useEffect(() => {
+    if (!qrCanvasRef.current || !targetUrl) return;
+
+    QRCode.toCanvas(
+      qrCanvasRef.current,
+      targetUrl,
+      {
+        width: 180,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: {
+          dark: '#0c0a09', // stone-950
+          light: '#ffffff'
+        }
+      },
+      (err) => {
+        if (err) console.error('Failed to render live display QR:', err);
+      }
+    );
+  }, [targetUrl]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -67,7 +95,7 @@ export const LiveDisplay: React.FC<LiveDisplayProps> = ({ eventId }) => {
           <button
             onClick={toggleFullscreen}
             className="p-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white cursor-pointer transition-colors"
-            title="Layar Penuh"
+            title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (F11)'}
           >
             {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
           </button>
@@ -79,12 +107,12 @@ export const LiveDisplay: React.FC<LiveDisplayProps> = ({ eventId }) => {
         {/* Highlight Focus Left */}
         {highlightPhoto ? (
           <div className="lg:col-span-8 flex flex-col items-center justify-center h-full">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-stone-800 bg-stone-900 max-h-[68vh] w-full flex items-center justify-center">
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-stone-800 bg-stone-900 max-h-[66vh] w-full flex items-center justify-center">
               <img
                 key={highlightPhoto.id}
                 src={highlightPhoto.imageUrl}
                 alt={highlightPhoto.guestName}
-                className="max-h-[68vh] w-auto object-contain animate-in fade-in duration-700"
+                className="max-h-[66vh] w-auto object-contain animate-in fade-in duration-700"
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950 via-stone-950/70 to-transparent p-6 text-left">
                 <span className="text-xs uppercase tracking-wider text-amber-300 font-bold block">
@@ -104,19 +132,30 @@ export const LiveDisplay: React.FC<LiveDisplayProps> = ({ eventId }) => {
           </div>
         )}
 
-        {/* Live QR Scan Reminder Right */}
-        <div className="lg:col-span-4 bg-stone-900/90 rounded-3xl p-8 border border-stone-800 text-center space-y-5 shadow-xl">
-          <span className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
-            SCAN & MUNCUL DI LAYAR
-          </span>
-          <div className="bg-white p-4 rounded-2xl inline-block shadow-inner">
-            <QrCode className="w-40 h-40 text-stone-950 mx-auto" />
+        {/* Live Functional QR Scan Card Right */}
+        <div className="lg:col-span-4 bg-stone-900/90 rounded-3xl p-8 border border-stone-800 text-center space-y-5 shadow-2xl">
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold bg-amber-950/60 px-3 py-1 rounded-full border border-amber-800/60">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>SCAN & MUNCUL DI LAYAR</span>
           </div>
-          <div className="space-y-1">
+
+          {/* Actual Scan-able QR Canvas */}
+          <div className="bg-white p-3.5 rounded-2xl inline-block shadow-2xl border-4 border-stone-800">
+            <canvas ref={qrCanvasRef} className="rounded-xl block max-w-full mx-auto" />
+          </div>
+
+          <div className="space-y-1.5">
             <h3 className="text-lg font-serif font-bold text-white">Foto Anda Langsung Tayang!</h3>
-            <p className="text-xs text-stone-400">
-              Arahkan kamera smartphone ke kode QR di atas atau kartu meja untuk membagikan foto momen bahagia ini.
+            <p className="text-xs text-stone-400 leading-relaxed max-w-xs mx-auto">
+              Arahkan kamera smartphone ke QR Code ini untuk mengambil dan membagikan foto momen bahagia ini.
             </p>
+          </div>
+
+          {/* Fallback direct link display */}
+          <div className="pt-2 border-t border-stone-800">
+            <span className="text-[10px] text-stone-500 font-mono block truncate select-all">
+              {targetUrl}
+            </span>
           </div>
         </div>
       </main>
@@ -124,7 +163,7 @@ export const LiveDisplay: React.FC<LiveDisplayProps> = ({ eventId }) => {
       {/* Bottom Photo Ticker */}
       <footer className="pt-2">
         <div className="flex items-center gap-3 overflow-x-auto scrollbar-none py-2">
-          {photos.slice(0, 12).map((p, idx) => (
+          {photos.slice(0, 16).map((p, idx) => (
             <div
               key={p.id}
               onClick={() => setActiveHighlightIndex(idx)}

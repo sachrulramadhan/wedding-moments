@@ -5,7 +5,7 @@ import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 import { Camera, Image as ImageIcon, Heart, MapPin, Calendar, Clock, Lock, ArrowRight } from 'lucide-react';
 import { PhotoLightbox } from '../components/common/PhotoLightbox';
-import { Photo } from '../types';
+import { Photo, WeddingEvent } from '../types';
 
 interface GuestEventHomeProps {
   eventId: string;
@@ -34,8 +34,9 @@ export const GuestEventHome: React.FC<GuestEventHomeProps> = ({ eventId }) => {
     if (b || g) {
       const bride = b || 'Pengantin Wanita';
       const groom = g || 'Pengantin Pria';
-      return {
+      const fallbackEvent: WeddingEvent = {
         id: eventId,
+        ownerId: 'synced_guest',
         brideName: bride,
         groomName: groom,
         title: `${bride} & ${groom}'s Wedding`,
@@ -44,13 +45,18 @@ export const GuestEventHome: React.FC<GuestEventHomeProps> = ({ eventId }) => {
         location: searchParams.get('l') || 'Lokasi Resepsi',
         description: 'Selamat datang! Abadikan momen indah bersama kami.',
         coverImage: events[0]?.coverImage || '',
-        theme: 'classic-cream' as const,
-        privacy: 'PUBLIC' as const,
-        moderationMode: 'AUTO_APPROVE' as const,
+        theme: 'classic-cream',
+        privacy: 'PUBLIC',
+        moderationMode: 'AUTO_APPROVE',
+        status: 'ACTIVE',
+        maxPhotos: 2000,
+        storageLimitMb: 8192,
         createdBy: 'synced_guest',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 90 * 86400000).toISOString(),
       };
+      return fallbackEvent;
     }
 
     return events[0];

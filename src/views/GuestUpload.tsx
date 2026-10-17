@@ -4,7 +4,7 @@ import { useRouter } from '../router/Router';
 import { useWedding } from '../context/WeddingContext';
 import { Navbar } from '../components/common/Navbar';
 import { CameraCapture } from '../components/camera/CameraCapture';
-import { processImageFile, validateImageFile } from '../../src/services/imageUtils';
+import { processImageFile, validateImageFile } from '../services/imageUtils';
 import { Camera, Image as ImageIcon, Heart, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface GuestUploadProps {

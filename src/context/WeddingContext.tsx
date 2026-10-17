@@ -157,8 +157,9 @@ export const WeddingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const createOrder = useCallback((data: CreateOrderData): Order => {
     const pkg = PACKAGES.find((p) => p.id === data.packageId) || PACKAGES[1];
     let discount = 0;
-    if (data.promoCode) {
-      const promo = PROMO_CODES.find((p) => p.code === data.promoCode.toUpperCase() && p.active);
+    if (data.promoCode && data.promoCode.trim()) {
+      const codeUpper = data.promoCode.trim().toUpperCase();
+      const promo = PROMO_CODES.find((p) => p.code === codeUpper && p.active);
       if (promo) {
         discount = Math.round((pkg.price * promo.discountPercent) / 100);
       }
